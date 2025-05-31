@@ -1,6 +1,7 @@
 package com.tianyi.parallelspace.util
 
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.bumptech.virtual.VirtualApi
@@ -23,5 +24,9 @@ object Utils {
 
     fun installAppToVirtualSpace(spaceInfo: VirtualSpaceInfo?, appInfo: AppInfo) {
         VirtualApi.installPackageFromHost(spaceInfo?.id ?: 0, appInfo.packageName, true)
+    }
+
+    fun initVirtualSdk(context: Context){
+        VirtualApi.install(context, null)
     }
 }

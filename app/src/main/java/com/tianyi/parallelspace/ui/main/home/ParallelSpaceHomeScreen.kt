@@ -40,6 +40,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -71,7 +72,7 @@ import com.tianyi.parallelspace.ui.widget.MiniFabItems
 @Composable
 fun ParallelSpaceHomeScreen(
     mainViewModel: ParallelSpaceViewModel,
-    viewModel: ParallelSpaceHomeViewModel = viewModel(factory = object : ViewModelProvider.Factory{
+    viewModel: ParallelSpaceHomeViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
             return ParallelSpaceHomeViewModel(mainViewModel) as T
         }
@@ -79,30 +80,53 @@ fun ParallelSpaceHomeScreen(
     onNavToAddScreen: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var deleteState by remember { mutableIntStateOf(DELETE_STATE_NORMAL) }
+
     when (state) {
-        is UiState.Loading -> { CircularProgressIndicator(modifier = Modifier.size(64.dp)) }
+        is UiState.Loading -> {
+            CircularProgressIndicator(modifier = Modifier.size(64.dp))
+        }
+
         is UiState.Error -> {
             Text((state as UiState.Error).message, style = MaterialTheme.typography.headlineSmall)
         }
+
         is UiState.Empty -> {
-            Text(stringResource(R.string.home_empty_content), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                stringResource(R.string.home_empty_content),
+                style = MaterialTheme.typography.headlineSmall
+            )
             Button(
                 modifier = Modifier.wrapContentSize(),
-                onClick = onNavToAddScreen) {
-                Text(stringResource(R.string.home_empty_button), style = MaterialTheme.typography.headlineSmall)
+                onClick = onNavToAddScreen
+            ) {
+                Text(
+                    stringResource(R.string.home_empty_button),
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
         }
+
         is UiState.Success -> {
-            VirtualSpacesPage((state as UiState.Success<List<VirtualSpaceInfo>>).data,
-                onItemClick = { appInfo, spaceInfo ->
-                    viewModel.onItemClick(appInfo, spaceInfo)
-                },
-                onDeleteClick = { appInfo, spaceInfo ->
-                    viewModel.onAppDeleteClick(appInfo, spaceInfo)
-                },
-                onDeletePageClick = { spaceInfo ->
-                    viewModel.onPageDeleteClick(spaceInfo)
-                })
+            val spaceList = (state as UiState.Success<List<VirtualSpaceInfo>>).data
+            if (spaceList.isNotEmpty()) {
+
+                    VirtualSpacesPage( deleteState, spaceList,
+                        onItemClick = { appInfo, spaceInfo ->
+                            viewModel.onItemClick(appInfo, spaceInfo)
+                        },
+                        onDeleteClick = { appInfo, spaceInfo ->
+                            viewModel.onAppDeleteClick(appInfo, spaceInfo)
+                        },
+                        onDeletePageClick = { spaceInfo ->
+                            viewModel.onPageDeleteClick(spaceInfo)
+                        },
+                        onDeleteStateClick = {
+                            deleteState = it
+                        })
+
+
+            }
         }
     }
 }
@@ -110,68 +134,85 @@ fun ParallelSpaceHomeScreen(
 const val DELETE_STATE_NORMAL = 0
 const val DELETE_STATE_APP = 1
 const val DELETE_STATE_PAGE = 2
+
 @Composable
-fun VirtualSpacesPage(spaceList: List<VirtualSpaceInfo>, onItemClick: ((AppInfo, VirtualSpaceInfo) -> Unit), onDeleteClick: ((AppInfo, VirtualSpaceInfo) -> Unit), onDeletePageClick: ((VirtualSpaceInfo) -> Unit)) {
-    Box {
-        var selectedTab by remember { mutableIntStateOf(0) }
-        val selectedSpaceInfo = remember { spaceList[selectedTab] }
-        val expandList = remember { listOf(MiniFabItems(Icons.Filled.Home, "Delete App") to {}, MiniFabItems(Icons.Filled.Person, "Delete Page") to {}) }
-        var deleteState by remember { mutableIntStateOf(DELETE_STATE_NORMAL) }
+fun VirtualSpacesPage(
+    deleteState: Int,
+    spaceList: List<VirtualSpaceInfo>,
+    onItemClick: ((AppInfo, VirtualSpaceInfo) -> Unit),
+    onDeleteClick: ((AppInfo, VirtualSpaceInfo) -> Unit),
+    onDeletePageClick: ((VirtualSpaceInfo) -> Unit),
+    onDeleteStateClick: (Int)-> Unit
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val selectedSpaceInfo by remember { derivedStateOf { spaceList[selectedTab] } }
+    val expandList = remember {
+        listOf(
+            MiniFabItems(Icons.Filled.Home, "Delete App") to {
+                onDeleteStateClick(DELETE_STATE_APP)
+            },
+            MiniFabItems(Icons.Filled.Person, "Delete Page") to {
+                onDeleteStateClick(DELETE_STATE_PAGE)
+            })
+    }
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Scrollable Tab Row with 10 tabs
-            ScrollableTabRow(selectedTabIndex = selectedTab) {
-                spaceList.forEachIndexed { index, spaceInfo ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = spaceInfo.spaceName)
-                                if (deleteState == DELETE_STATE_PAGE) {
-                                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.clickable { onDeletePageClick(spaceInfo) })
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-
-            // Grid of Apps
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(16.dp)
-            ) {
-
-                items(selectedSpaceInfo.virtualAppList) { appInfo ->
-                    if (deleteState == DELETE_STATE_APP){
-                        DeletableAppItem(appInfo){
-                            onDeleteClick(appInfo, selectedSpaceInfo)
-                        }
-                    }else{
-                        AppItem(appInfo){
-                            onItemClick(appInfo, selectedSpaceInfo)
-                        }
-                    }
-
-                }
-            }
-        }
-
-
+    Scaffold(floatingActionButton = {
         if (deleteState != DELETE_STATE_NORMAL) {
-            FloatingActionButton(onClick = { deleteState = DELETE_STATE_NORMAL }) {
+            FloatingActionButton(onClick = {
+                onDeleteStateClick(DELETE_STATE_NORMAL) }) {
                 Text("Done")
             }
         } else {
-            ExtendableFloatingActionButton(items = expandList, modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp))
+            ExtendableFloatingActionButton(items = expandList)
         }
 
+    }){ paddingVaules->
+    Column(modifier = Modifier.padding(paddingVaules)
+        .fillMaxSize()) {
+        // Scrollable Tab Row with 10 tabs
+        ScrollableTabRow(selectedTabIndex = selectedTab) {
+            spaceList.forEachIndexed { index, spaceInfo ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = spaceInfo.spaceName)
+                            if (deleteState == DELETE_STATE_PAGE) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable { onDeletePageClick(spaceInfo) })
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        // Grid of Apps
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(16.dp)
+        ) {
+
+            items(selectedSpaceInfo.virtualAppList) { appInfo ->
+                if (deleteState == DELETE_STATE_APP) {
+                    DeletableAppItem(appInfo) {
+                        onDeleteClick(appInfo, selectedSpaceInfo)
+                    }
+                } else {
+                    AppItem(appInfo) {
+                        onItemClick(appInfo, selectedSpaceInfo)
+                    }
+                }
+
+            }
+        }
+    }
     }
 }
 

@@ -38,9 +38,17 @@ class ParallelSpaceViewModel: ViewModel() {
                             AppInfo(it.packageName, it.loadLabel(packageManager).toString(), it.loadIcon(packageManager))
                         }
                     }
-                    _userSpaceMap[spaceId] = VirtualSpaceInfo(spaceId, virtualAppList = virtualAppList)
+                    if (virtualAppList.isNotEmpty()) {
+                        _userSpaceMap[spaceId] = VirtualSpaceInfo(spaceId, virtualAppList = virtualAppList)
+                    }
                 }
-                userSpaceFlow.update { UiState.Success(_userSpaceMap.values.toList()) }
+                userSpaceFlow.update {
+                    if (_userSpaceMap.isEmpty()) {
+                        UiState.Empty
+                    } else {
+                        UiState.Success(_userSpaceMap.values.toList())
+                    }
+                }
             }
         }
 
@@ -76,7 +84,8 @@ class ParallelSpaceViewModel: ViewModel() {
                     _userSpaceMap.remove(spaceInfo.id)
                 }
                 userSpaceFlow.update {
-                    UiState.Success(_userSpaceMap.values.toList())
+                    val list = _userSpaceMap.values.toList()
+                    if (list.isEmpty()) UiState.Empty else UiState.Success(list)
                 }
             } else {
                 // TODO: notify
@@ -92,7 +101,8 @@ class ParallelSpaceViewModel: ViewModel() {
             }
             _userSpaceMap.remove(spaceInfo.id)
             userSpaceFlow.update {
-                UiState.Success(_userSpaceMap.values.toList())
+                val list = _userSpaceMap.values.toList()
+                if (list.isEmpty()) UiState.Empty else UiState.Success(list)
             }
         }
     }

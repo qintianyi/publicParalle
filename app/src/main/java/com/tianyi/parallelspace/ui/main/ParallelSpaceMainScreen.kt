@@ -2,6 +2,7 @@ package com.tianyi.parallelspace.ui.main
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,10 +20,13 @@ import com.tianyi.parallelspace.ui.main.navigation.ParallelSpaceBottomNavigation
 import com.tianyi.parallelspace.ui.main.navigation.ParallelSpaceNavigationActions
 import com.tianyi.parallelspace.ui.main.navigation.ParallelSpaceTopLevelDestination
 import com.tianyi.parallelspace.ui.main.navigation.Route
+import com.tianyi.parallelspace.ui.widget.ParallelSpaceTopAppBar
+import androidx.lifecycle.viewmodel.compose.*
 
+@ExperimentalMaterial3Api
 @Composable
 fun ParallelSpaceMainScreen(
-    viewModel: ParallelSpaceViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: ParallelSpaceViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val navigationActions = remember(navController) {
@@ -36,7 +40,7 @@ fun ParallelSpaceMainScreen(
             ParallelSpaceBottomNavigationBar(
                 currentDestination,
                 navigationActions::navigateTo) },
-        topBar = { ParallelSpaceTopAppBar(currentDestination, navigationActions::navigateTo)})
+        topBar = { ParallelSpaceTopAppBar()})
     { paddingValues ->
         ParallelSpaceNavHost(
             viewModel = viewModel,

@@ -34,9 +34,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Css
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +64,14 @@ fun ParallelSpacePrivacyPolicyTopAppBar() {
 
 }
 
+@ExperimentalMaterial3Api
+@Composable
+fun ParallelSpaceTopAppBar() {
+    TopAppBar(title = {
+
+    })
+}
+
 @Composable
 fun AppItem(appInfo: AppInfo,modifier: Modifier = Modifier, onClick: (()->Unit)? = null) {
     Column (
@@ -71,7 +81,7 @@ fun AppItem(appInfo: AppInfo,modifier: Modifier = Modifier, onClick: (()->Unit)?
             .clickable { onClick?.invoke() },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val bmpPainter = remember { BitmapPainter(appInfo.appIcon.toBitmap().asImageBitmap()) }
+        val bmpPainter = BitmapPainter(appInfo.appIcon.toBitmap().asImageBitmap())
         Image(modifier = Modifier.size(56.dp),painter = bmpPainter, contentDescription = null)
         Text(text = appInfo.appName, color = Color.White)
     }
@@ -97,7 +107,7 @@ fun ExtendableFloatingActionButton(items: List<Pair<MiniFabItems, () -> Unit>>, 
 //        MiniFabItems(Icons.Filled.Person, "Person"),
 //        MiniFabItems(Icons.Filled.Build, "Settings")
 //    )
-    Column(modifier = modifier, horizontalAlignment = Alignment.End) {
+    Column(modifier = modifier.wrapContentSize(), horizontalAlignment = Alignment.End) {
         AnimatedVisibility(
             visible = expanded,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it }) + expandVertically(),
@@ -140,9 +150,7 @@ private fun ItemUi(icon: ImageVector, title: String, modifier: Modifier = Modifi
             Text(text = title)
         }
         Spacer(modifier = Modifier.width(10.dp))
-        FloatingActionButton(onClick = {
-            Toast.makeText(context, title, Toast.LENGTH_SHORT).show()
-        }, modifier = Modifier.size(45.dp), containerColor = Color(0xFFFF9800)) {
+        FloatingActionButton(onClick = {}, modifier = Modifier.size(45.dp), containerColor = Color(0xFFFF9800)) {
             Icon(imageVector = icon, contentDescription = "")
         }
     }
