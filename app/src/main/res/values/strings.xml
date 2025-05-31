@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ParallelSpace</string>
+    <string name="home_empty_content">There is no app installed now</string>
+    <string name="home_empty_button">Go to install</string>
+    <string name="add_empty_content">There is no app can be installed</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_add">Add\n</string>
+    <string name="add_dialog_confirm_title">Confirm install</string>
+    <string name="add_dialog_confirm_subtitle">select space(s)</string>
+</resources>
