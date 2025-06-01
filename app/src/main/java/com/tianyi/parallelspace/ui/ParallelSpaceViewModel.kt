@@ -2,6 +2,9 @@ package com.tianyi.parallelspace.ui
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bumptech.virtual.VirtualApi
@@ -20,7 +23,7 @@ class ParallelSpaceViewModel: ViewModel() {
     private val _userSpaceMap: SortedMap<Int, VirtualSpaceInfo> = sortedMapOf()
     private val _deviceInstalledPkgList: MutableList<AppInfo> = mutableListOf()
 
-    val userSpaceFlow = MutableStateFlow<UiState<List<VirtualSpaceInfo>>>(UiState.Loading)//MutableStateFlow<List<VirtualSpaceInfo>>(emptyList())
+    val userSpaceFlow = MutableStateFlow<UiState<SnapshotStateList<VirtualSpaceInfo>>>(UiState.Loading)//MutableStateFlow<List<VirtualSpaceInfo>>(emptyList())
     val deviceInstalledPackageChannel = MutableStateFlow<UiState<List<AppInfo>>>(UiState.Loading)//MutableStateFlow<List<AppInfo>>(emptyList())
 
     init {
@@ -39,14 +42,14 @@ class ParallelSpaceViewModel: ViewModel() {
                         }
                     }
                     if (virtualAppList.isNotEmpty()) {
-                        _userSpaceMap[spaceId] = VirtualSpaceInfo(spaceId, virtualAppList = virtualAppList)
+                        _userSpaceMap[spaceId] = VirtualSpaceInfo(spaceId, virtualAppList = virtualAppList.toMutableStateList())
                     }
                 }
                 userSpaceFlow.update {
                     if (_userSpaceMap.isEmpty()) {
                         UiState.Empty
                     } else {
-                        UiState.Success(_userSpaceMap.values.toList())
+                        UiState.Success(_userSpaceMap.values.toMutableStateList())
                     }
                 }
             }
@@ -74,36 +77,32 @@ class ParallelSpaceViewModel: ViewModel() {
     }
 
     fun uninstallAppFromVirtualSpace(spaceInfo: VirtualSpaceInfo, appInfo: AppInfo) {
+        userSpaceFlow.update { UiState.Loading }
         viewModelScope.launch(Dispatchers.IO) {
-            userSpaceFlow.update { UiState.Loading }
-
             val isSuccess = VirtualApi.uninstallPackage(appInfo.packageName, spaceInfo.id) == 1
-            if (isSuccess) {
-                _userSpaceMap[spaceInfo.id] = spaceInfo.copy(virtualAppList = spaceInfo.virtualAppList.toMutableList() - appInfo)
-                if (_userSpaceMap[spaceInfo.id]?.virtualAppList?.isEmpty() == true) {
-                    _userSpaceMap.remove(spaceInfo.id)
-                }
-                userSpaceFlow.update {
-                    val list = _userSpaceMap.values.toList()
-                    if (list.isEmpty()) UiState.Empty else UiState.Success(list)
-                }
-            } else {
-                // TODO: notify
-            }
+        }
+//        _userSpaceMap[spaceInfo.id] = spaceInfo.copy(virtualAppList = spaceInfo.virtualAppList - appInfo)
+        _userSpaceMap[spaceInfo.id]?.virtualAppList?.remove(appInfo)
+        if (_userSpaceMap[spaceInfo.id]?.virtualAppList?.isEmpty() == true) {
+            _userSpaceMap.remove(spaceInfo.id)
+        }
+        userSpaceFlow.update {
+            val list = _userSpaceMap.values.toMutableStateList()
+            if (list.isEmpty()) UiState.Empty else UiState.Success(list)
         }
     }
 
     fun uninstallVirtualSpace(spaceInfo: VirtualSpaceInfo) {
+        userSpaceFlow.update { UiState.Loading }
         viewModelScope.launch(Dispatchers.IO) {
-            userSpaceFlow.update { UiState.Loading }
             spaceInfo.virtualAppList.forEach {
                 VirtualApi.uninstallPackage(it.packageName, spaceInfo.id)
             }
-            _userSpaceMap.remove(spaceInfo.id)
-            userSpaceFlow.update {
-                val list = _userSpaceMap.values.toList()
-                if (list.isEmpty()) UiState.Empty else UiState.Success(list)
-            }
+        }
+        _userSpaceMap.remove(spaceInfo.id)
+        userSpaceFlow.update {
+            val list = _userSpaceMap.values.toMutableStateList()
+            if (list.isEmpty()) UiState.Empty else UiState.Success(list)
         }
     }
 
@@ -117,13 +116,14 @@ class ParallelSpaceViewModel: ViewModel() {
                     if (_userSpaceMap[spaceId] == null) {
                         // new space
                         _userSpaceMap[spaceId] =
-                            VirtualSpaceInfo(spaceId, virtualAppList = listOf(appInfo))
+                            VirtualSpaceInfo(spaceId, virtualAppList = mutableStateListOf(appInfo))
                     } else {
-                        _userSpaceMap[spaceId] =
-                            spaceInfo.copy(virtualAppList = spaceInfo.virtualAppList + appInfo)
+//                        _userSpaceMap[spaceId] =
+//                            spaceInfo.copy(virtualAppList = spaceInfo.virtualAppList + appInfo)
+                        _userSpaceMap[spaceId]?.virtualAppList?.add(appInfo)
                     }
                     userSpaceFlow.update {
-                        UiState.Success(_userSpaceMap.values.toList())
+                        UiState.Success(_userSpaceMap.values.toMutableStateList())
                     }
                 } else {
                     userSpaceFlow.update {
@@ -135,7 +135,7 @@ class ParallelSpaceViewModel: ViewModel() {
     }
 
     fun createNewSpace(): VirtualSpaceInfo {
-        return VirtualSpaceInfo(findSmallestMissing(_userSpaceMap.keys), emptyList(), spaceName = "New Space")
+        return VirtualSpaceInfo(findSmallestMissing(_userSpaceMap.keys), mutableStateListOf(), spaceName = "New Space")
     }
 
     fun findSmallestMissing(nums: Set<Int>): Int {

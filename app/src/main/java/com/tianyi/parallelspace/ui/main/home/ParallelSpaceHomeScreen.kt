@@ -40,10 +40,14 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -68,6 +72,7 @@ import com.tianyi.parallelspace.ui.widget.AppItem
 import com.tianyi.parallelspace.ui.widget.DeletableAppItem
 import com.tianyi.parallelspace.ui.widget.ExtendableFloatingActionButton
 import com.tianyi.parallelspace.ui.widget.MiniFabItems
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ParallelSpaceHomeScreen(
@@ -79,7 +84,13 @@ fun ParallelSpaceHomeScreen(
     }),
     onNavToAddScreen: () -> Unit
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+  val state by viewModel.uiState.collectAsState()
+//    var state: UiState<List<VirtualSpaceInfo>> by remember { mutableStateOf(UiState.Loading) }
+//    LaunchedEffect(Unit) {
+//        viewModel.uiState.collectLatest {
+//            state = it
+//        }
+//    }
     var deleteState by remember { mutableIntStateOf(DELETE_STATE_NORMAL) }
 
     when (state) {
@@ -145,7 +156,12 @@ fun VirtualSpacesPage(
     onDeleteStateClick: (Int)-> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val selectedSpaceInfo by remember { derivedStateOf { spaceList[selectedTab] } }
+    val selectedSpaceInfo = remember(spaceList, selectedTab) {
+        if (spaceList.size == selectedTab) {
+            selectedTab -= 1
+        }
+        spaceList[selectedTab]
+    }
     val expandList = remember {
         listOf(
             MiniFabItems(Icons.Filled.Home, "Delete App") to {
@@ -167,7 +183,8 @@ fun VirtualSpacesPage(
         }
 
     }){ paddingVaules->
-    Column(modifier = Modifier.padding(paddingVaules)
+    Column(modifier = Modifier
+        .padding(paddingVaules)
         .fillMaxSize()) {
         // Scrollable Tab Row with 10 tabs
         ScrollableTabRow(selectedTabIndex = selectedTab) {

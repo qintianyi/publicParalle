@@ -255,8 +255,8 @@ fun ConfirmInstallDialog(appInfo: AppInfo, availableSpaceInfoList: List<VirtualS
                     .fillMaxWidth()
                     .heightIn(max = 200.dp)) {
                     items(availableSpaceInfoList){ spaceInfo->
-                        SpaceItem(isSelected = selectedList.contains(spaceInfo), spaceInfo = spaceInfo) {
-                            if (it) selectedList.add(spaceInfo) else selectedList.remove(spaceInfo)
+                        SpaceItem(isSelected = selectedList.find { it.id == spaceInfo.id } != null, spaceInfo = spaceInfo) {
+                            if (it) selectedList.add(spaceInfo) else selectedList.removeIf {it1-> it1.id == spaceInfo.id }
                         }
                     }
                 }
@@ -310,7 +310,7 @@ fun SpaceItem(isSelected: Boolean, spaceInfo: VirtualSpaceInfo, onStateChange: (
 fun ConfirmInstallDialogPreview() {
     ParallelSpaceAppTheme {
         ConfirmInstallDialog(AppInfo("", "aaaa", AppCompatResources.getDrawable(LocalContext.current, R.mipmap.ic_launcher)!!),
-            List(50){ VirtualSpaceInfo(it, emptyList()) }
+            List(50){ VirtualSpaceInfo(it, mutableStateListOf()) }
             ,{}, {})
     }
 }

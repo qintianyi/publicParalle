@@ -18,6 +18,14 @@ import kotlinx.coroutines.launch
 class ParallelSpaceHomeViewModel(private val mainViewModel: ParallelSpaceViewModel): ViewModel(){
     val uiState: StateFlow<UiState<List<VirtualSpaceInfo>>> = mainViewModel.userSpaceFlow.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            uiState.collect{
+                println(it)
+            }
+        }
+    }
+
     fun onItemClick(it: AppInfo, spaceInfo: VirtualSpaceInfo) {
         VirtualApi.launchPackage(it.packageName, spaceInfo.id, 0)
     }

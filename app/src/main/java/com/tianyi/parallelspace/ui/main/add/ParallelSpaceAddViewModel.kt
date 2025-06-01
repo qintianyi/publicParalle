@@ -30,9 +30,7 @@ class ParallelSpaceAddViewModel(private val mainViewModel: ParallelSpaceViewMode
         return mainViewModel.userSpaceFlow.map {
             if (it is UiState.Success) {
                 // add new space
-                it.copy(
-                    it.data.filter { spaceInfo -> !spaceInfo.virtualAppList.contains(appInfo) } + mainViewModel.createNewSpace()
-                )
+                UiState.Success(it.data.filter { spaceInfo -> !spaceInfo.virtualAppList.contains(appInfo) } + mainViewModel.createNewSpace())
             } else if (it is UiState.Empty) {
                 UiState.Success(listOf(mainViewModel.createNewSpace()))
             }
